@@ -3,13 +3,15 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AppShell } from "@/components/app-shell"
+import { AuthProvider } from "@/lib/auth-context"
+import { ThemeProvider } from "@/lib/theme-context"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Employee Management System",
+  title: "Employee Management System - DFZ",
   description: "Enterprise-grade HR Management System for resource management and project tracking",
   generator: "v0.app",
   icons: {
@@ -37,9 +39,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <AppShell>{children}</AppShell>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+          </AuthProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

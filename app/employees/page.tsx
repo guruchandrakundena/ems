@@ -1,20 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Search,
-  Plus,
-  Download,
-  Upload,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
-  X,
-  Mail,
-  Phone,
-  Briefcase,
-} from "lucide-react"
+import { Search, Plus, Download, Upload, MoreHorizontal, Eye, Edit, Trash2, Mail, Phone, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -28,6 +15,7 @@ import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
 const employees = [
   {
@@ -153,7 +141,14 @@ export default function EmployeesPage() {
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [addStep, setAddStep] = useState(1)
 
+  const { visibleLocations, canDelete, isAdmin } = useAuth()
+
   const filteredEmployees = employees.filter((emp) => {
+    // Role-based location filtering
+    if (!visibleLocations.includes(emp.location)) {
+      return false
+    }
+
     const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,7 +164,9 @@ export default function EmployeesPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Employee Directory</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage and view all employees</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {isAdmin ? "Manage and view all employees" : `Viewing ${visibleLocations.join(" & ")} employees only`}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="rounded-xl bg-transparent">
@@ -228,16 +225,21 @@ export default function EmployeesPage() {
                   <SelectItem value="Contract">Contract</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger className="w-32 rounded-xl">
-                  <SelectValue placeholder="Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  <SelectItem value="Onshore">Onshore</SelectItem>
-                  <SelectItem value="Offshore">Offshore</SelectItem>
-                </SelectContent>
-              </Select>
+              {visibleLocations.length > 1 && (
+                <Select value={locationFilter} onValueChange={setLocationFilter}>
+                  <SelectTrigger className="w-32 rounded-xl">
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Locations</SelectItem>
+                    {visibleLocations.map((loc) => (
+                      <SelectItem key={loc} value={loc}>
+                        {loc}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -330,10 +332,12 @@ export default function EmployeesPage() {
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
+                        {canDelete && (
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -413,7 +417,7 @@ export default function EmployeesPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="personal" className="mt-4 space-y-4 animate-fade-slide-up">
+              <TabsContent value="personal" className="mt-4 space-y-4 tab-content-enter">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-muted/20 rounded-lg">
                     <p className="text-xs text-muted-foreground">Full Name</p>
@@ -434,7 +438,7 @@ export default function EmployeesPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="employment" className="mt-4 space-y-4 animate-fade-slide-up">
+              <TabsContent value="employment" className="mt-4 space-y-4 tab-content-enter">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-muted/20 rounded-lg">
                     <p className="text-xs text-muted-foreground">Department</p>
@@ -455,7 +459,7 @@ export default function EmployeesPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="skills" className="mt-4 animate-fade-slide-up">
+              <TabsContent value="skills" className="mt-4 tab-content-enter">
                 <div className="flex flex-wrap gap-2">
                   {selectedEmployee.skills.map((skill, i) => (
                     <Badge
@@ -470,7 +474,7 @@ export default function EmployeesPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="assignments" className="mt-4 animate-fade-slide-up">
+              <TabsContent value="assignments" className="mt-4 tab-content-enter">
                 <div className="p-4 border border-border rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-primary-accent/10 flex items-center justify-center">
@@ -484,7 +488,7 @@ export default function EmployeesPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="activity" className="mt-4 animate-fade-slide-up">
+              <TabsContent value="activity" className="mt-4 tab-content-enter">
                 <div className="space-y-3">
                   {[
                     { action: "Project assignment updated", date: "2026-01-08" },
@@ -493,7 +497,7 @@ export default function EmployeesPage() {
                   ].map((item, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-3 bg-muted/20 rounded-lg animate-fade-slide-up"
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/20 animate-fade-slide-up"
                       style={{ animationDelay: `${i * 50}ms` }}
                     >
                       <span className="text-sm">{item.action}</span>
@@ -506,10 +510,16 @@ export default function EmployeesPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-4 border-t border-border">
-              <Button className="flex-1 rounded-xl bg-primary-accent hover:bg-primary-accent/90 text-white">
+              <Button variant="outline" className="flex-1 rounded-xl bg-transparent">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Employee
               </Button>
+              {canDelete && (
+                <Button variant="destructive" className="rounded-xl">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -519,191 +529,150 @@ export default function EmployeesPage() {
       <Modal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        title={`Add New Employee - Step ${addStep} of 4`}
+        title={`Add Employee - Step ${addStep} of 3`}
         size="lg"
       >
         <div className="space-y-6">
-          {/* Progress Steps */}
-          <div className="flex items-center justify-between">
-            {["Personal Info", "Employment", "Skills", "Assignment"].map((step, i) => (
-              <div key={step} className="flex items-center">
-                <div
-                  className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200",
-                    addStep > i + 1
-                      ? "bg-green-500 text-white"
-                      : addStep === i + 1
-                        ? "bg-primary-accent text-white animate-pulse-glow"
-                        : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {addStep > i + 1 ? "✓" : i + 1}
+          {addStep === 1 && (
+            <div className="space-y-4 animate-fade-slide-up">
+              <p className="text-sm text-muted-foreground">Personal Information</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>First Name</Label>
+                  <Input className="rounded-xl input-glow" placeholder="Enter first name" />
                 </div>
-                {i < 3 && (
-                  <div
-                    className={cn(
-                      "h-1 w-16 mx-2 rounded transition-all duration-300",
-                      addStep > i + 1 ? "bg-green-500" : "bg-muted",
-                    )}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Step Content */}
-          <div className="animate-fade-slide-up">
-            {addStep === 1 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>First Name</Label>
-                    <Input placeholder="John" className="rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Last Name</Label>
-                    <Input placeholder="Smith" className="rounded-xl" />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input className="rounded-xl input-glow" placeholder="Enter last name" />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input type="email" placeholder="john.smith@company.com" className="rounded-xl" />
+                  <Input className="rounded-xl input-glow" type="email" placeholder="Enter email" />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone</Label>
-                  <Input placeholder="+1 234-567-8901" className="rounded-xl" />
+                  <Input className="rounded-xl input-glow" type="tel" placeholder="Enter phone" />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {addStep === 2 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Department</Label>
-                    <Select>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="engineering">Engineering</SelectItem>
-                        <SelectItem value="design">Design</SelectItem>
-                        <SelectItem value="management">Management</SelectItem>
-                        <SelectItem value="quality">Quality</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Role</Label>
-                    <Input placeholder="Senior Developer" className="rounded-xl" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Employment Type</Label>
-                    <Select>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="full-time">Full-Time</SelectItem>
-                        <SelectItem value="contract">Contract</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Location</Label>
-                    <Select>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="onshore">Onshore</SelectItem>
-                        <SelectItem value="offshore">Offshore</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+          {addStep === 2 && (
+            <div className="space-y-4 animate-fade-slide-up">
+              <p className="text-sm text-muted-foreground">Employment Details</p>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input type="date" className="rounded-xl" />
-                </div>
-              </div>
-            )}
-
-            {addStep === 3 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Skills (comma separated)</Label>
-                  <Input placeholder="React, Node.js, AWS" className="rounded-xl" />
-                </div>
-                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl min-h-[100px]">
-                  {["React", "Node.js", "AWS"].map((skill, i) => (
-                    <Badge
-                      key={skill}
-                      className="bg-primary-accent/10 text-primary-accent animate-fade-slide-up"
-                      style={{ animationDelay: `${i * 100}ms` }}
-                    >
-                      {skill}
-                      <X className="h-3 w-3 ml-1 cursor-pointer" />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {addStep === 4 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Initial Project Assignment (Optional)</Label>
+                  <Label>Department</Label>
                   <Select>
                     <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select project" />
+                      <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ecommerce">E-Commerce Platform - Acme Corp</SelectItem>
-                      <SelectItem value="banking">Mobile Banking App - FinanceFirst</SelectItem>
-                      <SelectItem value="healthcare">Healthcare Portal - MedTech</SelectItem>
+                      <SelectItem value="engineering">Engineering</SelectItem>
+                      <SelectItem value="design">Design</SelectItem>
+                      <SelectItem value="quality">Quality</SelectItem>
+                      <SelectItem value="analytics">Analytics</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-                  <p className="text-sm text-green-600 font-medium">Ready to create employee!</p>
-                  <p className="text-xs text-green-600/80 mt-1">
-                    Review the information and click Save to create the employee record.
-                  </p>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Input className="rounded-xl input-glow" placeholder="Enter role" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Employment Type</Label>
+                  <Select>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full-time">Full-Time</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Select>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {visibleLocations.map((loc) => (
+                        <SelectItem key={loc} value={loc.toLowerCase()}>
+                          {loc}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+
+          {addStep === 3 && (
+            <div className="space-y-4 animate-fade-slide-up">
+              <p className="text-sm text-muted-foreground">Skills & Additional Info</p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Skills (comma separated)</Label>
+                  <Input className="rounded-xl input-glow" placeholder="React, Node.js, AWS..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Manager</Label>
+                  <Select>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Select manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="jane-doe">Jane Doe</SelectItem>
+                      <SelectItem value="mike-wilson">Mike Wilson</SelectItem>
+                      <SelectItem value="lisa-wong">Lisa Wong</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input className="rounded-xl input-glow" type="date" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Progress Indicator */}
+          <div className="flex gap-2">
+            {[1, 2, 3].map((step) => (
+              <div
+                key={step}
+                className={cn(
+                  "h-1.5 flex-1 rounded-full transition-colors",
+                  step <= addStep ? "bg-primary-accent" : "bg-muted",
+                )}
+              />
+            ))}
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between pt-4 border-t border-border">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between">
             <Button
               variant="outline"
               className="rounded-xl bg-transparent"
-              onClick={() => setAddStep((s) => Math.max(1, s - 1))}
-              disabled={addStep === 1}
+              onClick={() => {
+                if (addStep > 1) setAddStep(addStep - 1)
+                else setAddModalOpen(false)
+              }}
             >
-              Previous
+              {addStep === 1 ? "Cancel" : "Back"}
             </Button>
-            {addStep < 4 ? (
-              <Button
-                className="rounded-xl bg-primary-accent hover:bg-primary-accent/90 text-white"
-                onClick={() => setAddStep((s) => s + 1)}
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                className="rounded-xl bg-green-500 hover:bg-green-600 text-white"
-                onClick={() => {
-                  setAddModalOpen(false)
-                }}
-              >
-                Save Employee
-              </Button>
-            )}
+            <Button
+              className="rounded-xl bg-primary-accent hover:bg-primary-accent/90 text-white btn-ripple"
+              onClick={() => {
+                if (addStep < 3) setAddStep(addStep + 1)
+                else setAddModalOpen(false)
+              }}
+            >
+              {addStep === 3 ? "Create Employee" : "Next"}
+            </Button>
           </div>
         </div>
       </Modal>
