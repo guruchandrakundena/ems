@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { authApi } from "@/lib/api-client"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,17 +26,17 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
 
-    // Simulate login
-    setTimeout(() => {
-      if (email && password) {
-        router.push("/")
-      } else {
-        setError("Please enter valid credentials")
-        setShake(true)
-        setTimeout(() => setShake(false), 500)
-      }
+    try {
+      await authApi.login(email, password)
+      // Redirect to dashboard on successful login
+      router.push("/")
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please check your credentials.")
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
   return (
